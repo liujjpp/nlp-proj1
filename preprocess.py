@@ -42,7 +42,7 @@ def dress_filter(src_path='./gg2020.json', dest_path='./gg2020_dress.json'):
                     fout.write('\n')
 
 def tweets_to_words(src_path):
-    tokenizer = RegexpTokenizer(r'-|\w+')
+    tokenizer = RegexpTokenizer(r'-|[A-Za-z-]+')
     result = []
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
