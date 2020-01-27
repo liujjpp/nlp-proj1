@@ -1,17 +1,23 @@
 '''Version 0.35'''
 import json
+import spacy
 from collections import Counter
 from difflib import SequenceMatcher
 from preprocess import *
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
 OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - musical or comedy', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best performance by an actress in a motion picture - musical or comedy', 'best performance by an actor in a motion picture - musical or comedy', 'best performance by an actress in a supporting role in any motion picture', 'best performance by an actor in a supporting role in any motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best motion picture - animated', 'best motion picture - foreign language', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best television series - musical or comedy', 'best television limited series or motion picture made for television', 'best performance by an actress in a limited series or a motion picture made for television', 'best performance by an actor in a limited series or a motion picture made for television', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best performance by an actress in a television series - musical or comedy', 'best performance by an actor in a television series - musical or comedy', 'best performance by an actress in a supporting role in a series, limited series or motion picture made for television', 'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 'cecil b. demille award']
+NLP = spacy.load('en_core_web_sm')
 
 def get_human_names(text):
     '''Extract human names from tweet text.
-    Returns a list of strings'''
+    Returns a list of strings.'''
     names = []
-
+    doc = NLP(text)
+    entities = [(ent.text, ent.label_) for ent in doc.ents]
+    for ent in entities:
+        if ent[1] == 'PERSON':
+            names.append(ent[0])
     return names
 
 def get_hosts(year):
@@ -33,12 +39,31 @@ def get_awards(year):
     award_words2 = ['-', 'a', 'an', 'any', 'best', 'by', 'for', 'foreign', 'in', 'limited',
                     'made', 'or', 'original', 'supporting', 'A', 'An', 'Any', 'Best', 'By', 'For',
                     'Foreign', 'In', 'Limited', 'Made', 'Or', 'Original', 'Supporting', 'mini', 'Mini']
+    characters = [' B ', ' C ', ' D ', ' E ', ' F ', ' G ', ' H ', ' I ', ' J ', ' K ', ' L ', ' M ',
+                  ' N ', ' O ', ' P ', ' Q ', ' R ', ' S ', ' T ', ' U ', ' V ', ' W ', ' X ', ' Y ', ' Z ',
+                  ' b ', ' c ', ' d ', ' e ', ' f ', ' g ', ' h ', ' i ', ' j ', ' k ', ' l ', ' m ',
+                  ' n ', ' o ', ' p ', ' q ', ' r ', ' s ', ' t ', ' u ', ' v ', ' w ', ' x ', ' y ', ' z ']
     
     src_path = './gg' + str(year) + '.json'
     tweets = tweets_to_words(src_path)
     awards = []
+    award_contains_human_name = []
 
     for tweet in tweets:
+        if 'Award' in tweet or 'award' in tweet:
+            text = ' '.join(tweet)
+            for ch in characters:
+                if ch in text:
+                    text = text.replace(ch, ' ' + ch[1] + '. ')
+            names = get_human_names(text)
+            for name in names:
+                if 'Golden' in name or 'golden' in name or name[-1] != 'd' or len(name.split()) < 4:
+                    continue
+                if 'award' in name or 'Award' in name:
+                    award_contains_human_name.append(name.lower())
+                elif (name + 'award') in name or (name + 'Award') in name:
+                    award_contains_human_name.append(name.lower() + 'award')
+
         if 'Best' in tweet:
             first_index = tweet.index('Best')
         elif 'best' in tweet:
@@ -109,6 +134,7 @@ def get_awards(year):
     #         new_awards[i] = new_awards[i][::-1]
     
     awards_counter = Counter(new_awards)
+    award_contains_human_name_counter = Counter(award_contains_human_name)
     # print(len(awards_counter))
 
     # merge similar award names
@@ -124,15 +150,17 @@ def get_awards(year):
                 awards_counter[key] += awards_counter[similar]
                 awards_counter[similar] = 0
 
-    with open('./awards.txt', 'w') as fout:
-        for key in awards_counter.keys():
-            if awards_counter[key] > 5:
-                fout.write(key + ' ' + str(awards_counter[key]))
-                fout.write('\n')
+    # with open('./awards.txt', 'w') as fout:
+    #     for key in awards_counter.keys():
+    #         if awards_counter[key] > 5:
+    #             fout.write(key + ' ' + str(awards_counter[key]))
+    #             fout.write('\n')
 
     awards = []
     for key, val in awards_counter.most_common(35):
         awards.append(key)
+    award_contains_name = award_contains_human_name_counter.most_common(1)
+    awards.append(award_contains_name[0][0])
     # print(len(awards))
     
     # visited = []
