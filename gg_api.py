@@ -7,8 +7,12 @@ from preprocess import *
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
 OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - musical or comedy', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best performance by an actress in a motion picture - musical or comedy', 'best performance by an actor in a motion picture - musical or comedy', 'best performance by an actress in a supporting role in any motion picture', 'best performance by an actor in a supporting role in any motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best motion picture - animated', 'best motion picture - foreign language', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best television series - musical or comedy', 'best television limited series or motion picture made for television', 'best performance by an actress in a limited series or a motion picture made for television', 'best performance by an actor in a limited series or a motion picture made for television', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best performance by an actress in a television series - musical or comedy', 'best performance by an actor in a television series - musical or comedy', 'best performance by an actress in a supporting role in a series, limited series or motion picture made for television', 'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 'cecil b. demille award']
-NLP = spacy.load('en_core_web_sm')
+OFFICIAL_AWARDS = []
+AWARD_CATEGORIES = {'animated': [], 'foreign': [], 'screenplay': [], 'director': [], 'song': [], 
+                    'score': [], 'actor-drama': [], 'actress-drama': [], 'other-drama': [], 'actor-comedy': [], 
+                    'actress-comedy': [], 'other-comedy': [], 'actor-other': [], 'actress-other': [], 'other-other': []}
 YEAR = 2020
+NLP = spacy.load('en_core_web_sm')
 
 def get_human_names(text):
     '''Extract human names from tweet text.
@@ -39,6 +43,8 @@ def get_hosts(year):
         names = get_human_names(' '.join(tweet))
         for name in names:
             name_list = name.split()
+            if name_list[0] == 'RT':
+                continue
             if len(name_list) > 1 and len(name_list) < 3 and not any(w in name for w in stop_words):
                 all_names.append(name.lower())
 
@@ -68,7 +74,7 @@ def get_awards(year):
                   ' b ', ' c ', ' d ', ' e ', ' f ', ' g ', ' h ', ' i ', ' j ', ' k ', ' l ', ' m ',
                   ' n ', ' o ', ' p ', ' q ', ' r ', ' s ', ' t ', ' u ', ' v ', ' w ', ' x ', ' y ', ' z ']
     
-    src_path = './gg' + str(year) + '.json'
+    src_path = './gg' + str(year) + '_award.json'
     tweets = tweets_to_words(src_path)
     awards = []
     award_contains_human_name = []
@@ -117,6 +123,10 @@ def get_awards(year):
             new_award = new_award.replace('- -', '-')
         if 'tv' in award:
             new_award = new_award.replace('tv', 'television')
+        if 'miniseries' in award:
+            new_award = new_award.replace('miniseries', 'mini-series')
+        if 'mini series' in award:
+            new_award = new_award.replace('mini series', 'mini-series')
         if 'best actor' in award:
             new_award = new_award.replace('best actor', 'best performance by an actor')
         if 'best actress' in award:
@@ -187,7 +197,7 @@ def get_awards(year):
     #             fout.write('\n')
 
     awards = []
-    for key, val in awards_counter.most_common(27):
+    for key, val in awards_counter.most_common(26):
         awards.append(key)
     award_contains_name = award_contains_human_name_counter.most_common(1)
     awards.append(award_contains_name[0][0])
@@ -230,12 +240,138 @@ def get_presenters(year):
     # Your code here
     return presenters
 
+def categories_init(year):
+    if year > 2016:
+        official_awards = OFFICIAL_AWARDS_1819
+    else:
+        official_awards = OFFICIAL_AWARDS_1315
+
+    for award in official_awards:
+        if 'award' in award:
+            award_words = award.split()
+            AWARD_CATEGORIES[award_words[-2]] = [award]
+            continue
+        if 'animated' in award:
+            AWARD_CATEGORIES['animated'].append(award)
+            continue
+        if 'foreign' in award:
+            AWARD_CATEGORIES['foreign'].append(award)
+            continue
+        if 'screenplay' in award:
+            AWARD_CATEGORIES['screenplay'].append(award)
+            continue
+        if 'director' in award:
+            AWARD_CATEGORIES['director'].append(award)
+            continue
+        if 'song' in award:
+            AWARD_CATEGORIES['song'].append(award)
+            continue
+        if 'score' in award:
+            AWARD_CATEGORIES['score'].append(award)
+            continue
+        category = ''
+        if 'actor' in award:
+            category = 'actor'
+        elif 'actress' in award:
+            category = 'actress'
+        else:
+            category = 'other'
+        if 'drama' in award:
+            category += '-drama'
+        elif 'comedy' in award:
+            category += '-comedy'
+        else:
+            category += '-other'
+        AWARD_CATEGORIES[category].append(award)
+
+def recognize_award(text):
+    text = text.lower()
+    if 'tv' in text:
+        text.replace('tv', 'television')
+    if 'miniseries' in text:
+        text.replace('miniseries', 'mini-series')
+    if 'mini series' in text:
+        text.replace('mini series', 'mini-series')
+    words = text.split()
+    category = ''
+
+    for key in AWARD_CATEGORIES:
+        if (not '-' in key) and (key in words):
+            category = key
+            break
+    else:
+        if 'actor' in words:
+            category = 'actor'
+        elif 'actress' in words:
+            category = 'actress'
+        else:
+            category = 'other'
+        if 'drama' in words:
+            category += '-drama'
+        elif 'comedy' in words:
+            category += '-comedy'
+        else:
+            category += '-other'
+        
+    if category == 'other-other' and not 'television' in words:
+        return 'none'
+
+    if len(AWARD_CATEGORIES[category]) == 1:
+        return AWARD_CATEGORIES[category][0]
+    
+    tweet_words = set()
+    stop_words = ['-', 'a', 'an', 'by', 'for', 'in', 'or']
+    for w in words:
+        if not w in stop_words:
+            tweet_words.add(w)
+
+    closet_award, max_len, award_len = '', 0, 99
+    for award in AWARD_CATEGORIES[category]:
+        award_words = set()
+        temp = award.split()
+        for w in temp:
+            if not w in stop_words:
+                award_words.add(w)
+        shared_words = award_words.intersection(tweet_words)
+        if len(shared_words) > max_len:
+            max_len = len(shared_words)
+            closet_award = award
+            award_len = len(award_words)
+        elif len(shared_words) == max_len:
+            if award_len > len(award_words):
+                award_len = len(award_words)
+                closet_award = award
+    
+    return closet_award
+
 def pre_ceremony():
     '''This function loads/fetches/processes any data your program
     will use, and stores that data in your DB or in a json, csv, or
     plain text file. It is the first thing the TA will run when grading.
     Do NOT change the name of this function or what it returns.'''
     # Your code here
+    YEAR = int(input('Which year: '))
+
+    categories_init(YEAR)
+
+    award_filter(YEAR)
+    src_path = './gg' + str(YEAR) + '_award.json'
+    dest_path = './gg' + str(YEAR) + '_categories.json'
+    with open(src_path, 'r') as fin:
+        with open(dest_path, 'w') as fout:
+            for tweet in fin.readlines():
+                tweet = json.loads(tweet)
+                category = recognize_award(tweet['text'])
+                if category != 'none':
+                    new_tweet = {}
+                    new_tweet['text'] = tweet['text']
+                    new_tweet['category'] = category
+                    json.dump(new_tweet, fout)
+                    fout.write('\n')
+
+    host_filter(YEAR)
+    dress_filter(YEAR)
+
     print("Pre-ceremony processing complete.")
     return
 
@@ -246,7 +382,6 @@ def main():
     run when grading. Do NOT change the name of this function or
     what it returns.'''
     # Your code here
-    YEAR = input('Which year: ')
     return
 
 if __name__ == '__main__':

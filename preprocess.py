@@ -2,29 +2,7 @@ import json
 import nltk
 from nltk.tokenize import RegexpTokenizer
 
-def best_filter(year):
-    src_path = './gg' + str(year) + '.json'
-    dest_path = './gg' + str(year) + '_best.json'
-
-    with open(src_path, 'r') as fin:
-        with open(dest_path, 'w') as fout:
-            for tweet in fin.readlines():
-                tweet = json.loads(tweet)
-                if isinstance(tweet, list):
-                    for t in tweet:
-                        if 'best' in tweet['text'] or 'Best' in tweet['text'] or 'BEST' in tweet['text']:
-                            new_tweet = {}
-                            new_tweet['text'] = t['text']
-                            json.dump(new_tweet, fout)
-                            fout.write('\n')
-                    continue
-                if 'best' in tweet['text'] or 'Best' in tweet['text'] or 'BEST' in tweet['text']:
-                    new_tweet = {}
-                    new_tweet['text'] = tweet['text']
-                    # new_tweet['created_at'] = tweet['created_at']
-                    # new_tweet['user'] = tweet['user']
-                    json.dump(new_tweet, fout)
-                    fout.write('\n')
+AWARD_WORDS = ['best', 'Best', 'BEST', 'award', 'Award']
 
 def award_filter(year):
     src_path = './gg' + str(year) + '.json'
@@ -36,13 +14,13 @@ def award_filter(year):
                 tweet = json.loads(tweet)
                 if isinstance(tweet, list):
                     for t in tweet:
-                        if 'award' in tweet['text'] or 'Award' in tweet['text']:
+                        if any(w in tweet['text'] for w in AWARD_WORDS):
                             new_tweet = {}
                             new_tweet['text'] = t['text']
                             json.dump(new_tweet, fout)
                             fout.write('\n')
                     continue
-                if 'award' in tweet['text'] or 'Award' in tweet['text']:
+                if any(w in tweet['text'] for w in AWARD_WORDS):
                     new_tweet = {}
                     new_tweet['text'] = tweet['text']
                     # new_tweet['created_at'] = tweet['created_at']
