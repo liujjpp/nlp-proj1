@@ -24,6 +24,29 @@ def get_hosts(year):
     '''Hosts is a list of one or more strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
+    src_path = './gg' + str(year) + '.json'
+    tweets = tweets_to_words(src_path)
+    hosts = []
+    all_names = []
+    stop_words = ['Golden', 'golden', 'Hollywood', 'hollywood']
+
+    for tweet in tweets:
+        if not ('host' in tweet or 'Host' in tweet):
+            continue
+        if 'next' in tweet or 'Next' in tweet:
+            continue
+        names = get_human_names(' '.join(tweet))
+        for name in names:
+            name_list = name.split()
+            if len(name_list) > 1 and len(name_list) < 3 and not any(w in name for w in stop_words):
+                all_names.append(name.lower())
+
+    name_counter = Counter(all_names)
+    top2 = name_counter.most_common(2):
+    hosts.append(top2[0[0]])
+    if top2[1][1] > top2[0][1] * 0.4:
+        hosts.append(top2[1][0])
+    
     return hosts
 
 def get_awards(year):
@@ -96,7 +119,7 @@ def get_awards(year):
         if 'best actor' in award:
             new_award = new_award.replace('best actor', 'best performance by an actor')
         if 'best actress' in award:
-            new_award = new_award.replace('best actress', 'best performance by an actor')
+            new_award = new_award.replace('best actress', 'best performance by an actress')
         if 'actor' in award and not 'actor in a' in award:
             if 'actor in' in award:
                 new_award = new_award.replace('actor in', 'actor in a')
@@ -104,7 +127,7 @@ def get_awards(year):
                 new_award = new_award.replace('actor', 'actor in a')
         if 'actress' in award and not 'actress in a' in award:
             if 'actress in' in award:
-                new_award = new_award.replace('actress in', 'actor in a')
+                new_award = new_award.replace('actress in', 'actress in a')
             else:
                 new_award = new_award.replace('actress', 'actress in a')
         if 'motion picture' in award:
@@ -114,10 +137,16 @@ def get_awards(year):
             awards.append(new_award)
 
     new_awards = []
-    filter_words = ['- -', 'tv', 'best actor', 'best actress']
+    filter_words = ['- -', 'tv', 'best actor', 'best actress', 'in a -']
     for award in awards:
         if not any(w in award for w in filter_words):
             if 'actor' in award and not 'actor in a' in award:
+                continue
+            if 'actress' in award and not 'actress in a' in award:
+                continue
+            if ('actor' in award or 'actress' in award) and not '-' in award and not 'motion picture' in award:
+                continue
+            if award.count('best') > 1:
                 continue
             if 'motion picture' in award and award[-14:] != 'motion picture':
                 if not ('motion picture -' in award or 'motion picture m' in award):
@@ -157,7 +186,7 @@ def get_awards(year):
     #             fout.write('\n')
 
     awards = []
-    for key, val in awards_counter.most_common(35):
+    for key, val in awards_counter.most_common(27):
         awards.append(key)
     award_contains_name = award_contains_human_name_counter.most_common(1)
     awards.append(award_contains_name[0][0])
