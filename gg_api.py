@@ -1,8 +1,9 @@
 '''Version 0.35'''
 import json
 import spacy
-from collections import Counter
+from collections import Counter, defaultdict
 from difflib import SequenceMatcher
+from nltk.tokenize import RegexpTokenizer
 from preprocess import *
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
@@ -238,6 +239,38 @@ def get_presenters(year):
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
     # Your code here
+    official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
+    tokenizer = RegexpTokenizer(r'-|[A-Za-z]+')
+    
+    presenters_sets = dict().fromkeys(official_awards, None)
+    for key in presenters_sets:
+        presenters_sets[key] = set()
+    
+    src_path = './gg' + str(year) + '_categories.json'
+    with open(src_path, 'r') as fin:
+        for tweet in fin.readlines():
+            tweet = json.loads(tweet)
+            words = tokenizer.tokenize(tweet['text'])
+            text = ' '.join(words)
+            if not ('present' in text or 'Present' in text):
+                continue
+            names = get_human_names(text)
+            stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'represent', 'didn', 'comedy']
+            for name in names:
+                name_lower = name.lower()
+                if not any(w in name_lower for w in stop_words) and len(name.split()) < 3:
+                    presenters_sets[tweet['category']].add(name_lower)
+
+    presenters = dict().fromkeys(official_awards, None)
+    for key in presenters:
+        presenters[key] = []
+        for name1 in presenters_sets[key]:
+            for name2 in presenters_sets[key]:
+                if name1 in name2 and name1 != name2:
+                    break
+            else:
+                presenters[key].append(name1)
+    
     return presenters
 
 def categories_init(year):
