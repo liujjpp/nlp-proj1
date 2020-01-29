@@ -276,14 +276,14 @@ def get_presenters(year):
 def get_best_dressed(year):
     src_path = './gg' + str(year) + '_dress.json'
     tweets = tweets_to_words(src_path)
-    words = ['best', 'best-dressed', 'great', 'good', 'amazing', 'beautiful', 'gorgeous']
+    keywords = ['best', 'best-dressed', 'great', 'good', 'amazing', 'beautiful', 'gorgeous']
     stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Dress', 'dress', 'Best', 'best']
     all_names = []
 
     for tweet in tweets:
         text = ' '.join(tweet)
         text_lower = text.lower()
-        if not any(w in text_lower for w in words):
+        if not any(w in text_lower for w in keywords):
             continue
         names = get_human_names(text)
         for name in names:
@@ -299,14 +299,14 @@ def get_best_dressed(year):
 def get_worst_dressed(year):
     src_path = './gg' + str(year) + '_dress.json'
     tweets = tweets_to_words(src_path)
-    words = ['worst', 'worst-dressed', 'bad', 'weird', 'terrible', 'gross']
+    keywords = ['worst', 'worst-dressed', 'bad', 'weird', 'terrible', 'gross']
     stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Dress', 'dress', 'Worst', 'worst']
     all_names = []
 
     for tweet in tweets:
         text = ' '.join(tweet)
         text_lower = text.lower()
-        if not any(w in text_lower for w in words):
+        if not any(w in text_lower for w in keywords):
             continue
         names = get_human_names(text)
         for name in names:
@@ -316,9 +316,33 @@ def get_worst_dressed(year):
                 all_names.append(name)
 
     names_counter = Counter(all_names)
-    print(names_counter)
     top1 = names_counter.most_common(1)
     return top1[0][0]
+
+def get_most_humorous(year):
+    src_path = './gg' + str(year) + '.json'
+    tweets = tweets_to_words(src_path)
+    keywords = ['funny', 'joke', 'haha', 'hilarious']
+    stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Didn', 'didn']
+    all_names = []
+
+    for tweet in tweets:
+        text = ' '.join(tweet)
+        text_lower = text.lower()
+        if not any(w in text_lower for w in keywords):
+            continue
+        names = get_human_names(text)
+        for name in names:
+            if any(w in name for w in stop_words):
+                continue
+            if len(name.split()) < 4:
+                all_names.append(name)
+
+    names_counter = Counter(all_names)
+    most_humorous = []
+    for key, val in names_counter.most_common(3):
+        most_humorous.append(key)
+    return most_humorous
 
 def categories_init(year):
     if year > 2016:
