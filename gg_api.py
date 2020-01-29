@@ -241,7 +241,7 @@ def get_presenters(year):
     # Your code here
     official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
     tokenizer = RegexpTokenizer(r'-|[A-Za-z]+')
-    
+
     presenters_sets = dict().fromkeys(official_awards, None)
     for key in presenters_sets:
         presenters_sets[key] = set()
@@ -272,6 +272,53 @@ def get_presenters(year):
                 presenters[key].append(name1)
     
     return presenters
+
+def get_best_dressed(year):
+    src_path = './gg' + str(year) + '_dress.json'
+    tweets = tweets_to_words(src_path)
+    words = ['best', 'best-dressed', 'great', 'good', 'amazing', 'beautiful', 'gorgeous']
+    stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Dress', 'dress', 'Best', 'best']
+    all_names = []
+
+    for tweet in tweets:
+        text = ' '.join(tweet)
+        text_lower = text.lower()
+        if not any(w in text_lower for w in words):
+            continue
+        names = get_human_names(text)
+        for name in names:
+            if any(w in name for w in stop_words):
+                continue
+            if len(name.split()) < 4:
+                all_names.append(name)
+
+    names_counter = Counter(all_names)
+    top1 = names_counter.most_common(1)
+    return top1[0][0]
+
+def get_worst_dressed(year):
+    src_path = './gg' + str(year) + '_dress.json'
+    tweets = tweets_to_words(src_path)
+    words = ['worst', 'worst-dressed', 'bad', 'weird', 'terrible', 'gross']
+    stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Dress', 'dress', 'Worst', 'worst']
+    all_names = []
+
+    for tweet in tweets:
+        text = ' '.join(tweet)
+        text_lower = text.lower()
+        if not any(w in text_lower for w in words):
+            continue
+        names = get_human_names(text)
+        for name in names:
+            if any(w in name for w in stop_words):
+                continue
+            if len(name.split()) < 4:
+                all_names.append(name)
+
+    names_counter = Counter(all_names)
+    print(names_counter)
+    top1 = names_counter.most_common(1)
+    return top1[0][0]
 
 def categories_init(year):
     if year > 2016:
