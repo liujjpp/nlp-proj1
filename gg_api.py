@@ -1,4 +1,5 @@
 '''Version 0.35'''
+import imdb
 import json
 import spacy
 from collections import Counter, defaultdict
@@ -14,9 +15,10 @@ AWARD_CATEGORIES = {'animated': [], 'foreign': [], 'screenplay': [], 'director':
                     'actress-comedy': [], 'other-comedy': [], 'actor-other': [], 'actress-other': [], 'other-other': []}
 YEAR = 2020
 NLP = spacy.load('en_core_web_sm')
+DB = imdb.IMDb()
 
 def get_human_names(text):
-    '''Extract human names from tweet text.
+    '''Extracts human names from tweet text.
     Returns a list of strings.'''
     names = []
     doc = NLP(text)
@@ -176,7 +178,6 @@ def get_awards(year):
     
     awards_counter = Counter(new_awards)
     award_contains_human_name_counter = Counter(award_contains_human_name)
-    # print(len(awards_counter))
 
     # merge similar award names
     for key in awards_counter.keys():
@@ -191,18 +192,11 @@ def get_awards(year):
                 awards_counter[key] += awards_counter[similar]
                 awards_counter[similar] = 0
 
-    # with open('./awards.txt', 'w') as fout:
-    #     for key in awards_counter.keys():
-    #         if awards_counter[key] > 5:
-    #             fout.write(key + ' ' + str(awards_counter[key]))
-    #             fout.write('\n')
-
     awards = []
     for key, val in awards_counter.most_common(26):
         awards.append(key)
     award_contains_name = award_contains_human_name_counter.most_common(1)
     awards.append(award_contains_name[0][0])
-    # print(len(awards))
     
     # visited = []
     # for i in range(len(awards)):
@@ -232,6 +226,64 @@ def get_winner(year):
     names as keys, and each entry containing a single string.
     Do NOT change the name of this function or what it returns.'''
     # Your code here
+    official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
+    winners_all = dict().fromkeys(official_awards, None)
+    for key in winners_all:
+        winners_all[key] = []
+    
+    tokenizer_for_person = RegexpTokenizer(r'[A-Za-z]+')
+    tokenizer_for_film = RegexpTokenizer(r'-|[A-Za-z0-9:]+')
+
+    person_award_keywords = ['actor', 'actress', 'director', 'award']
+    winner_keywords = ['Win', 'Won', 'win', 'won', 'scoop']
+
+    src_path = './gg' + str(year) + '_categories.json'
+    with open(src_path, 'r') as fin:
+        for tweet in fin.readlines():
+            tweet = json.loads(tweet)
+            if not any(w in tweet['text'] for w in winner_keywords):
+                continue
+            if any(w in tweet['category'] for w in person_award_keywords):
+                words = tokenizer_for_person.tokenize(tweet['text'])
+                text = ' '.join(words)
+                names = get_human_names(text)
+                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'represent', 'didn', 'comedy']
+                for name in names:
+                    name_lower = name.lower()
+                    if not any(w in name_lower for w in stop_words) and len(name.split()) < 4:
+                        winners_all[tweet['category']].append(name_lower)
+            else:
+                words = tokenizer_for_film.tokenize(tweet['text'])
+                text = ' '.join(words)
+                # NOT IMPLEMENTED
+    
+    winners = dict().fromkeys(official_awards, None)
+    for key in winners:
+        winner_counter = Counter(winners_all[key])
+        top1 = winner_counter.most_common(1)
+        if len(top1) > 0:
+            winners[key] = top1[0][0]
+        else:
+            winners[key] = ''
+
+    for key in winners:
+        if any(w in key for w in person_award_keywords):
+            if len(winners[key].split()) < 2 and winners[key] != '':
+                print('searching %s ...' % winners[key])
+                query = DB.search_person(winners[key])
+                for person in query:
+                    official_name = person['name']
+                    flag = False
+                    if len(official_name.split()) > 1:
+                        name_lower = official_name.lower()
+                        for name in winners_all[key]:
+                            if name == name_lower:
+                                winners[key] = name_lower
+                                flag = True
+                                break
+                    if flag:
+                        break
+
     return winners
 
 def get_presenters(year):
@@ -258,7 +310,7 @@ def get_presenters(year):
             stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'represent', 'didn', 'comedy']
             for name in names:
                 name_lower = name.lower()
-                if not any(w in name_lower for w in stop_words) and len(name.split()) < 3:
+                if not any(w in name_lower for w in stop_words) and len(name.split()) < 4:
                     presenters_sets[tweet['category']].add(name_lower)
 
     presenters = dict().fromkeys(official_awards, None)
