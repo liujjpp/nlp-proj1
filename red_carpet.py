@@ -1,5 +1,10 @@
 import re
 import statistics
+import spacy
+
+nlp_backend = spacy.load("en_core_web_sm")
+
+OCCURANCE_FILTER_NUMBER = 5
 
 simple_case = re.compile(' ([A-Z]\S+ [A-Z]\S+?) ')
 
@@ -24,31 +29,56 @@ def relevent_tweet(tweet):
 
 #returns a list of names
 def loose_person_detection(tweet):
-    names = []
+    name_in_tweet = False
     for elem in simple_case.findall(tweet['text']):
         if "Globe" not in elem and "Golden" not in elem and "Awards" not in elem:
-            names.append(elem)
-    return names
+            name_in_tweet = True
+            break
+    if name_in_tweet:
+        names = spacy_loose_person_detection(tweet)
+        person = ""
+        people = []
+        for i in range(len(names)):
+            if i % 2 == 0:
+                person = str(names[i])
+            else:
+                person = person + " " + str(names[i])
+                people.append(person)
+                person = ""
+        return people
+    return []
+  
+def spacy_loose_person_detection(tweet):
+    info = nlp_backend(tweet['text'])
+    return [token for token in info if token.ent_type_=='PERSON']
 
 def get_dress_sentiment(tweet):
      return float(int(tweet_contains(tweet, rc_positive)) - int(tweet_contains(tweet, rc_negative)))
 
 def ordered_loose_person_detection(tweets):
-    name_data = []
-    counts = []
-    sentiments = []
+    all_name_data = []
+    all_counts = []
+    all_sentiments = []
     for tweet in tweets:
         names = loose_person_detection(tweet)
         sentiment = get_dress_sentiment(tweet)
         for name in names:
-            if name in name_data:
-                idx = name_data.index(name)
-                counts[idx]+=1
-                sentiments[idx]+=[sentiment]
+            if name in all_name_data:
+                idx = all_name_data.index(name)
+                all_counts[idx]+=1
+                all_sentiments[idx]+=[sentiment]
             else:
-                name_data.append(name)
-                counts.append(1)
-                sentiments.append([sentiment])
+                all_name_data.append(name)
+                all_counts.append(1)
+                all_sentiments.append([sentiment])
+    name_data = []
+    counts = []
+    sentiments = []
+    for i in range(len(all_counts)):
+        if all_counts[i] > OCCURANCE_FILTER_NUMBER and '@' not in all_name_data[i]:
+            name_data.append(all_name_data[i])
+            counts.append(all_counts[i])
+            sentiments.append(all_sentiments[i])
     avg_sentiment = [1.0*x/y for x,y in sorted(zip([sum(x) for x in sentiments], counts))]
     std_sentiment = [1.0*x/y for x,y in sorted(zip([statistics.stdev(x) if len(x)>1 else 0 for x in sentiments], \
                                                    counts), reverse=True)]
