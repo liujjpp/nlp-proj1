@@ -75,7 +75,7 @@ def ordered_loose_person_detection(tweets):
     counts = []
     sentiments = []
     for i in range(len(all_counts)):
-        if all_counts[i] > OCCURANCE_FILTER_NUMBER:
+        if all_counts[i] > OCCURANCE_FILTER_NUMBER and '@' not in all_name_data[i]:
             name_data.append(all_name_data[i])
             counts.append(all_counts[i])
             sentiments.append(all_sentiments[i])
