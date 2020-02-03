@@ -63,63 +63,108 @@ def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
-    best_words = ['Best', 'best', 'BEST']
-    award_words1 = ['actor', 'actress', 'animated', 'comedy', 'director', 'drama', 'feature', 'film', 'language', 'mini-series', 
-                    'motion', 'musical', 'performance', 'picture', 'role', 'score', 'screenplay', 'series', 'song', 'television',
-                    'Actor', 'Actress', 'Animated', 'Comedy', 'Director', 'Drama', 'Feature', 'Film', 'Language', 'Mini-series',
-                    'Motion', 'Musical', 'Performance', 'Picture', 'Role', 'Score', 'Screenplay', 'Series', 'Song', 'Television',
-                    'miniseries', 'Miniseries']
-    award_words2 = ['-', 'a', 'an', 'any', 'best', 'by', 'for', 'foreign', 'in', 'limited',
-                    'made', 'or', 'original', 'supporting', 'A', 'An', 'Any', 'Best', 'By', 'For',
-                    'Foreign', 'In', 'Limited', 'Made', 'Or', 'Original', 'Supporting', 'mini', 'Mini']
+    keywords = ['Win', 'win', 'won', 'nail', 'Goes To', 'Goes to', 'goes to', 'Named', 'named', 'takes home', 'taken home']
+    best_words = ['Best', 'BEST']
+    helper_words = ['a', 'an', 'any', 'by', 'for', 'in', 'or', '-']
     characters = [' B ', ' C ', ' D ', ' E ', ' F ', ' G ', ' H ', ' I ', ' J ', ' K ', ' L ', ' M ',
                   ' N ', ' O ', ' P ', ' Q ', ' R ', ' S ', ' T ', ' U ', ' V ', ' W ', ' X ', ' Y ', ' Z ',
                   ' b ', ' c ', ' d ', ' e ', ' f ', ' g ', ' h ', ' i ', ' j ', ' k ', ' l ', ' m ',
                   ' n ', ' o ', ' p ', ' q ', ' r ', ' s ', ' t ', ' u ', ' v ', ' w ', ' x ', ' y ', ' z ']
-    
-    src_path = './gg' + str(year) + '_award.json'
-    tweets = tweets_to_words(src_path)
     awards = []
     award_contains_human_name = []
 
-    for tweet in tweets:
-        if 'Award' in tweet or 'award' in tweet:
-            text = ' '.join(tweet)
-            for ch in characters:
-                if ch in text:
-                    text = text.replace(ch, ' ' + ch[1] + '. ')
-            names = get_human_names(text)
-            for name in names:
-                if 'Golden' in name or 'golden' in name or name[-1] != 'd' or len(name.split()) < 4:
-                    continue
-                if 'award' in name or 'Award' in name:
-                    award_contains_human_name.append(name.lower())
-                elif (name + 'award') in name or (name + 'Award') in name:
-                    award_contains_human_name.append(name.lower() + 'award')
+    src_path = './gg' + str(year) + '_award.json'
+    # round 1
+    with open(src_path, 'r') as fin:
+        for tweet in fin.readlines():
+            tweet = json.loads(tweet)
+            
+            if 'Award' in tweet['text'] or 'award' in tweet['text']:
+                text = tweet['text']
+                for ch in characters:
+                    if ch in text:
+                        text = text.replace(ch, ' ' + ch[1] + '. ')
+                names = get_human_names(text)
+                for name in names:
+                    if 'Golden' in name or 'golden' in name or name[-1] != 'd' or len(name.split()) < 4:
+                        continue
+                    if 'award' in name or 'Award' in name:
+                        award_contains_human_name.append(name.lower())
+                    elif (name + 'award') in name or (name + 'Award') in name:
+                        award_contains_human_name.append(name.lower() + 'award')
 
-        if 'Best' in tweet:
-            first_index = tweet.index('Best')
-        elif 'best' in tweet:
-            first_index = tweet.index('best')
-        elif 'BEST' in tweet:
-            first_index = tweet.index('BEST')
-        else:
-            continue
+            if not any(w in tweet['text'] for w in keywords):
+                continue
 
-        award_name = ['best']
-        for i in range(first_index + 1, len(tweet)):
-            if tweet[i] in award_words1 or tweet[i] in award_words2:
-                award_name.append(tweet[i].lower())
-            elif tweet[i] in best_words:
-                if len(award_name) > 3 and len(award_name) < 20 and not award_name[-1] in award_words2:
-                    awards.append(' '.join(award_name))
-                award_name = ['best']
+            first_index = -1
+            if 'Best' in tweet['text']:
+                first_index = tweet['text'].index('Best')
+            elif 'BEST' in tweet['text']:
+                first_index = tweet['text'].index('BEST')
             else:
-                break
-        if len(award_name) > 3 and len(award_name) < 20 and not award_name[-1] in award_words2:
-            awards.append(' '.join(award_name))
+                continue
+            text = tweet['text'][first_index:]
+            text = text.split()
+
+            noise_words = ['Golden', 'Globe', 'Hollywood', 'Oscar', 'Nomin', 'Win', 'At', 'The']
+            award_name = ['best']
+            for word in text[1:]:
+                if (65 <= ord(word[0]) <= 90) or word in helper_words:
+                    if any(w in word for w in noise_words):
+                        break
+
+                    if word.lower() == 'for' and award_name[-1] != 'made':
+                        break
+
+                    if word in helper_words:
+                        if word == '-':
+                            noise_words.append(word)
+                        award_name.append(word)
+                        continue
+                    
+                    if not (97 <= ord(word[-1]) <= 122 or 65 <= ord(word[-1]) <= 90 or word[-1] == ','):
+                        new_word = word
+                        while len(new_word) > 0 and not (97 <= ord(new_word[-1]) <= 122 or 65 <= ord(new_word[-1]) <= 90):
+                            new_word = new_word[:-1]
+                        if len(new_word) > 0:
+                            award_name.append(new_word.lower())
+                        break
+                    
+                    if word in best_words:
+                        if award_name[-1] in helper_words:
+                            while award_name[-1] in helper_words:
+                                award_name = award_name[:-1]
+                        if len(award_name) > 4 and len(award_name) < 20:
+                            name = ' '.join(award_name)
+                            while not (97 <= ord(name[-1]) <= 122 or 65 <= ord(name[-1]) <= 90):
+                                name = name[:-1]
+                            if 4 < len(name.split()) < 20:
+                                awards.append(name)
+                        award_name = ['best']
+                        continue
+                    
+                    award_name.append(word.lower())
+            
+            if award_name[-1] in helper_words:
+                while award_name[-1] in helper_words:
+                    award_name = award_name[:-1]
+            if 4 < len(award_name) < 20:
+                awards.append(' '.join(award_name))
+
+    awards_counter = Counter(awards)
+    top150 = awards_counter.most_common(150)
+    potential_awards = [key for key, val in top150]
+    awards = []
+    # round 2
+    with  open(src_path, 'r') as fin:
+        for tweet in fin.readlines():
+            tweet = json.loads(tweet)
+            text = tweet['text'].lower()
+            for award in potential_awards:
+                if award in text:
+                    awards.append(award)
     
-    # make names closer to official names
+    # synonym replacement
     for award in awards:
         new_award = award
         if '- -' in award:
@@ -130,51 +175,14 @@ def get_awards(year):
             new_award = new_award.replace('miniseries', 'mini-series')
         if 'mini series' in award:
             new_award = new_award.replace('mini series', 'mini-series')
-        if 'best actor' in award:
-            new_award = new_award.replace('best actor', 'best performance by an actor')
-        if 'best actress' in award:
-            new_award = new_award.replace('best actress', 'best performance by an actress')
-        if 'actor' in award and not 'actor in a' in award:
-            if 'actor in' in award:
-                new_award = new_award.replace('actor in', 'actor in a')
-            else:
-                new_award = new_award.replace('actor', 'actor in a')
-        if 'actress' in award and not 'actress in a' in award:
-            if 'actress in' in award:
-                new_award = new_award.replace('actress in', 'actress in a')
-            else:
-                new_award = new_award.replace('actress', 'actress in a')
-        if 'motion picture' in award:
-            if award[-14:] != 'motion picture' and not 'motion picture made' in award:
-                new_award = new_award.replace('motion picture', 'motion picture -')
         if new_award != award:
             awards.append(new_award)
 
     new_awards = []
-    filter_words = ['- -', 'tv', 'best actor', 'best actress', 'in a -']
+    filter_words = ['- -', 'tv', 'miniseries', 'mini series']
     for award in awards:
         if not any(w in award for w in filter_words):
-            if 'actor' in award and not 'actor in a' in award:
-                continue
-            if 'actress' in award and not 'actress in a' in award:
-                continue
-            if ('actor' in award or 'actress' in award) and not '-' in award and not 'motion picture' in award:
-                continue
-            if award.count('best') > 1:
-                continue
-            if 'motion picture' in award and award[-14:] != 'motion picture':
-                if not ('motion picture -' in award or 'motion picture m' in award):
-                    continue
-            if 'picture' in award and not 'motion picture' in award:
-                new_word = award.replace('picture', 'motion picture')
-                new_awards.append(new_word)
-            else:
-                new_awards.append(award)
-    # for i in range(len(new_awards)):
-    #     if new_awards[i].count('-') > 1:
-    #         new_word = new_awards[i][::-1]
-    #         new_awards[i] = new_word.replace('-', '', 1).replace('  ', ' ')
-    #         new_awards[i] = new_awards[i][::-1]
+            new_awards.append(award)
     
     awards_counter = Counter(new_awards)
     award_contains_human_name_counter = Counter(award_contains_human_name)
@@ -186,31 +194,45 @@ def get_awards(year):
             if similar in awards_counter.keys():
                 awards_counter[key] += awards_counter[similar]
                 awards_counter[similar] = 0
+            similar = key.replace(' - ', ', ')
+            if similar in awards_counter.keys():
+                awards_counter[key] += awards_counter[similar]
+                awards_counter[similar] = 0
         if ' or ' in key:
             similar = key.replace(' or ', ' ')
             if similar in awards_counter.keys():
                 awards_counter[key] += awards_counter[similar]
                 awards_counter[similar] = 0
-
+            similar = key.replace(' or ', '/')
+            if similar in awards_counter.keys():
+                awards_counter[key] += awards_counter[similar]
+                awards_counter[similar] = 0
+        if ' any ' in key:
+            similar = key.replace(' any ', ' a ')
+            if similar in awards_counter.keys():
+                awards_counter[key] += awards_counter[similar]
+                awards_counter[similar] = 0
+    
+    top100 = awards_counter.most_common(100)
     awards = []
-    for key, val in awards_counter.most_common(26):
-        awards.append(key)
+    top_n, count = 25, 0
+    for key, val in top100:
+        if val == 0:
+            break
+        if count <= top_n:
+            if '-' in key:
+                awards.append(key)
+                count += 1
+    top_n, count = 10, 0
+    for key, val in top100:
+        if val == 0:
+            break
+        if count <= top_n:
+            if len(key.split()) >= 10 and not '-' in key:
+                awards.append(key)
+                count += 1
     award_contains_name = award_contains_human_name_counter.most_common(1)
     awards.append(award_contains_name[0][0])
-    
-    # visited = []
-    # for i in range(len(awards)):
-    #     if awards[i] in visited:
-    #         continue
-    #     flag = False
-    #     for j in range(i + 1, len(awards)):
-    #         if SequenceMatcher(None, awards[i], awards[j]).ratio() >= 0.9:
-    #             flag = True
-    #             visited.append(awards[j])
-    #             print(awards[j])
-    #     if flag:
-    #         print(awards[i])
-    #         print('-------------')
 
     return awards
 
