@@ -81,13 +81,14 @@ def tweets_to_words(src_path):
     result = []
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
-            tweet = json.loads(tweet)
+            tweet = json.loads(tweet)[0]
             words = tokenizer.tokenize(tweet['text'])
             result.append(words)
     return result
 
 
 if __name__ == "__main__":
+    pass
     # best_filter()
     # award_filter()
     # host_filter()
