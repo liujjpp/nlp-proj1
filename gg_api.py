@@ -52,7 +52,7 @@ def get_hosts(year):
                 all_names.append(name.lower())
 
     name_counter = Counter(all_names)
-    top2 = name_counter.most_common(2):
+    top2 = name_counter.most_common(2)
     hosts.append(top2[0[0]])
     if top2[1][1] > top2[0][1] * 0.4:
         hosts.append(top2[1][0])
