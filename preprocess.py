@@ -76,12 +76,14 @@ def dress_filter(year):
                     json.dump(new_tweet, fout)
                     fout.write('\n')
 
+# for json files like gg2020_award.json/gg2020_host.json/gg2020_dress.json
+# NOT for tokenizing tweets in gg2013.json or gg2015.json
 def tweets_to_words(src_path):
     tokenizer = RegexpTokenizer(r'-|[A-Za-z-]+')
     result = []
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
-            tweet = json.loads(tweet)[0]
+            tweet = json.loads(tweet)
             words = tokenizer.tokenize(tweet['text'])
             result.append(words)
     return result
@@ -89,7 +91,6 @@ def tweets_to_words(src_path):
 
 if __name__ == "__main__":
     pass
-    # best_filter()
     # award_filter()
     # host_filter()
     # dress_filter()

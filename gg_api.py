@@ -1,6 +1,7 @@
 '''Version 0.35'''
 import imdb
 import json
+import re
 import spacy
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
@@ -156,7 +157,7 @@ def get_awards(year):
     potential_awards = [key for key, val in top150]
     awards = []
     # round 2
-    with  open(src_path, 'r') as fin:
+    with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
             tweet = json.loads(tweet)
             text = tweet['text'].lower()
@@ -253,10 +254,10 @@ def get_winner(year):
     for key in winners_all:
         winners_all[key] = []
     
-    tokenizer_for_person = RegexpTokenizer(r'[A-Za-z]+')
-    tokenizer_for_film = RegexpTokenizer(r'-|[A-Za-z0-9:]+')
+    tokenizer_for_human = RegexpTokenizer(r'[A-Za-z-]+')
+    tokenizer_for_film = RegexpTokenizer(r'-|&|[A-Za-z0-9:,]+')
 
-    person_award_keywords = ['actor', 'actress', 'director', 'award']
+    human_award_keywords = ['actor', 'actress', 'director', 'award']
     winner_keywords = ['Win', 'Won', 'win', 'won', 'scoop']
 
     src_path = './gg' + str(year) + '_categories.json'
@@ -265,11 +266,11 @@ def get_winner(year):
             tweet = json.loads(tweet)
             if not any(w in tweet['text'] for w in winner_keywords):
                 continue
-            if any(w in tweet['category'] for w in person_award_keywords):
-                words = tokenizer_for_person.tokenize(tweet['text'])
+            if any(w in tweet['category'] for w in human_award_keywords):
+                words = tokenizer_for_human.tokenize(tweet['text'])
                 text = ' '.join(words)
                 names = get_human_names(text)
-                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'represent', 'didn', 'comedy']
+                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'congrats', 'represent', 'didn', 'comedy']
                 for name in names:
                     name_lower = name.lower()
                     if not any(w in name_lower for w in stop_words) and len(name.split()) < 4:
@@ -277,7 +278,14 @@ def get_winner(year):
             else:
                 words = tokenizer_for_film.tokenize(tweet['text'])
                 text = ' '.join(words)
-                # NOT IMPLEMENTED
+                names = re.findall('((?:[0-9]+|[A-Z][a-z]+|[A-Z]+)[:,]?(?:\s(?:&\s)?(?:-\s)?(?:in\s)?(?:for\s)?(?:a\s)?(?:[0-9]+|[A-Z][a-z]+|[A-Z]+)[:,]?)*)', text)
+                stop_words = ['golden', 'globes', 'oscar', 'congrats']
+                for name in names:
+                    if not len(name) > 1:
+                        continue
+                    name_lower = name.lower()
+                    if not any(w in name_lower for w in stop_words):
+                        winners_all[tweet['category']].append(name_lower)
     
     winners = dict().fromkeys(official_awards, None)
     for key in winners:
@@ -291,7 +299,7 @@ def get_winner(year):
     for key in winners:
         if any(w in key for w in person_award_keywords):
             if len(winners[key].split()) < 2 and winners[key] != '':
-                print('searching %s ...' % winners[key])
+                print('Searching %s ...' % winners[key])
                 query = DB.search_person(winners[key])
                 for person in query:
                     official_name = person['name']
