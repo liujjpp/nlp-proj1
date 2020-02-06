@@ -257,16 +257,19 @@ def get_winner(year):
     tokenizer_for_human = RegexpTokenizer(r'[A-Za-z-]+')
     tokenizer_for_film = RegexpTokenizer(r'-|&|[A-Za-z0-9:,]+')
 
-    human_award_keywords = ['actor', 'actress', 'director', 'award']
-    winner_keywords = ['Win', 'Won', 'win', 'won', 'scoop']
+    person_award_keywords = ['actor', 'actress', 'director', 'award']
+    winner_keywords = ['win', 'won', 'receives', 'accepts', 'scoop']
+    not_winner_words = ['would win', 'will win']
 
     src_path = './gg' + str(year) + '_categories.json'
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
             tweet = json.loads(tweet)
-            if not any(w in tweet['text'] for w in winner_keywords):
+            if not any(w in tweet['text'].lower() for w in winner_keywords):
                 continue
-            if any(w in tweet['category'] for w in human_award_keywords):
+            if any (w in tweet['text'].lower() for w in not_winner_words):
+                continue
+            if any(w in tweet['category'] for w in person_award_keywords):
                 words = tokenizer_for_human.tokenize(tweet['text'])
                 text = ' '.join(words)
                 names = get_human_names(text)
