@@ -22,10 +22,17 @@ def tweet_contains(tweet, things):
             return True
     return False
             
-def relevent_tweet(tweet):
+def red_carpet_relevent_tweet(tweet):
     if tweet_contains(tweet, rc_hashtags) or tweet_contains(tweet, rc_words):
         return True
     return False
+
+def red_carpet_all_relevent_tweets(tweets):
+    rel_data = []
+    for t in tweets:
+        if red_carpet_relevent_tweet(t):
+            rel_data.append(t)
+    return rel_data
 
 #returns a list of names
 def loose_person_detection(tweet):
@@ -47,7 +54,7 @@ def loose_person_detection(tweet):
                 person = ""
         return people
     return []
-  
+
 def spacy_loose_person_detection(tweet):
     info = nlp_backend(tweet['text'])
     return [token for token in info if token.ent_type_=='PERSON']
@@ -75,7 +82,11 @@ def ordered_loose_person_detection(tweets):
     counts = []
     sentiments = []
     for i in range(len(all_counts)):
-        if all_counts[i] > OCCURANCE_FILTER_NUMBER and '@' not in all_name_data[i]:
+        if all_counts[i] > OCCURANCE_FILTER_NUMBER \
+        and '@' not in all_name_data[i] \
+        and '/' not in all_name_data[i] \
+        and ':' not in all_name_data[i] \
+        and all_name_data[i][0].isupper():
             name_data.append(all_name_data[i])
             counts.append(all_counts[i])
             sentiments.append(all_sentiments[i])
@@ -106,9 +117,12 @@ def red_carpet_most_discussed(rc_info):
 
 def red_carpet_most_controversial(rc_info):
     return rc_info['variant_sentiment']
-
-def red_carpet_image_of_best_dressed(rc_info):
-    raise ValueError("NOT IMPLEMENTED")
-
-def red_carpet_image_of_worst_dressed(rc_info):
-    raise ValueError("NOT IMPLEMENTED")
+  
+#outputs a string
+def readable_red_carpet(rc_info):
+    out = "Red Carpet: \n"
+    out += "Best Dressed: "+str(red_carpet_best_dressed(rc_info))+"\n"
+    out += "Worst Dressed: "+str(red_carpet_worst_dressed(rc_info))+"\n"
+    out += "Most Discussed: "+str(red_carpet_most_discussed(rc_info))+"\n"
+    out += "Most Controversial: "+str(red_carpet_most_controversial(rc_info))+"\n"
+    return out
