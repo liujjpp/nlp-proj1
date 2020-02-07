@@ -122,7 +122,7 @@ def red_carpet_most_controversial(rc_info):
 def readable_red_carpet(rc_info):
     out = "Red Carpet: \n"
     out += "Best Dressed: "+str(red_carpet_best_dressed(rc_info))+"\n"
-    out += "Worst Dressed: "+str(red_carpet_best_dressed(rc_info))+"\n"
-    out += "Most Discussed: "+str(red_carpet_best_dressed(rc_info))+"\n"
-    out += "Most Controversial: "+str(red_carpet_best_dressed(rc_info))+"\n"
+    out += "Worst Dressed: "+str(red_carpet_worst_dressed(rc_info))+"\n"
+    out += "Most Discussed: "+str(red_carpet_most_discussed(rc_info))+"\n"
+    out += "Most Controversial: "+str(red_carpet_most_controversial(rc_info))+"\n"
     return out
