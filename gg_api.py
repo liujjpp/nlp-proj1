@@ -14,7 +14,7 @@ OFFICIAL_AWARDS = []
 AWARD_CATEGORIES = {'animated': [], 'foreign': [], 'screenplay': [], 'director': [], 'song': [], 
                     'score': [], 'actor-drama': [], 'actress-drama': [], 'other-drama': [], 'actor-comedy': [], 
                     'actress-comedy': [], 'other-comedy': [], 'actor-other': [], 'actress-other': [], 'other-other': []}
-YEAR = 2020
+YEAR = None
 NLP = spacy.load('en_core_web_sm')
 DB = imdb.IMDb()
 
@@ -33,17 +33,13 @@ def get_hosts(year):
     '''Hosts is a list of one or more strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
-    src_path = './gg' + str(year) + '.json'
+    src_path = './gg' + str(year) + '_host.json'
     tweets = tweets_to_words(src_path)
     hosts = []
     all_names = []
     stop_words = ['Golden', 'golden', 'Hollywood', 'hollywood']
 
     for tweet in tweets:
-        if not ('host' in tweet or 'Host' in tweet):
-            continue
-        if 'next' in tweet or 'Next' in tweet:
-            continue
         names = get_human_names(' '.join(tweet))
         for name in names:
             name_list = name.split()
@@ -54,7 +50,7 @@ def get_hosts(year):
 
     name_counter = Counter(all_names)
     top2 = name_counter.most_common(2)
-    hosts.append(top2[0[0]])
+    hosts.append(top2[0][0])
     if top2[1][1] > top2[0][1] * 0.4:
         hosts.append(top2[1][0])
     
@@ -254,7 +250,7 @@ def get_nominees(year):
     nominee_keywords = ['nomin', 'beat', 'will win', 'would win', 'not win', 'should have won']
     noise_words = ['why ', 'info ']
 
-    src_path = './gg' + str(year) + '_categories.json'
+    src_path = './gg' + str(year) + '_classified.json'
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
             tweet = json.loads(tweet)
@@ -320,7 +316,7 @@ def get_winner(year):
     winner_keywords = ['win', 'won', 'receives', 'accepts', 'scoop']
     not_winner_words = ['would win', 'will win']
 
-    src_path = './gg' + str(year) + '_categories.json'
+    src_path = './gg' + str(year) + '_classified.json'
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
             tweet = json.loads(tweet)
@@ -390,7 +386,7 @@ def get_presenters(year):
     for key in presenters_sets:
         presenters_sets[key] = set()
     
-    src_path = './gg' + str(year) + '_categories.json'
+    src_path = './gg' + str(year) + '_classified.json'
     with open(src_path, 'r') as fin:
         for tweet in fin.readlines():
             tweet = json.loads(tweet)
@@ -598,13 +594,15 @@ def pre_ceremony():
     plain text file. It is the first thing the TA will run when grading.
     Do NOT change the name of this function or what it returns.'''
     # Your code here
+    global YEAR
     YEAR = int(input('Which year: '))
 
     categories_init(YEAR)
-
+    extract_text(YEAR)
     award_filter(YEAR)
+
     src_path = './gg' + str(YEAR) + '_award.json'
-    dest_path = './gg' + str(YEAR) + '_categories.json'
+    dest_path = './gg' + str(YEAR) + '_classified.json'
     with open(src_path, 'r') as fin:
         with open(dest_path, 'w') as fout:
             for tweet in fin.readlines():
@@ -630,6 +628,41 @@ def main():
     run when grading. Do NOT change the name of this function or
     what it returns.'''
     # Your code here
+    print("Pre-ceremony processing ...")
+    pre_ceremony()
+
+    results = {}
+
+    print('Getting winners ...')
+    winners = get_winner(YEAR)
+    print('Getting winners completed.')
+
+    print('Getting nominees ...')
+    nominees = get_nominees(YEAR)
+    print('Getting nominees completed.')
+
+    print('Getting presenters ...')
+    presenters = get_presenters(YEAR)
+    print('Getting presenters completed.')
+
+    print('Getting hosts ...')
+    hosts = get_hosts(YEAR)
+    print('Getting hosts completed.')
+
+    results['hosts'] = hosts
+    official_awards = OFFICIAL_AWARDS_1819 if YEAR > 2016 else OFFICIAL_AWARDS_1315
+    award_data = dict().fromkeys(official_awards, None)
+    for key in award_data:
+        award_data[key] = {}
+        award_data[key]['nominees'] = nominees[key]
+        award_data[key]['presenters'] = presenters[key]
+        award_data[key]['winner'] = winners[key]
+    results['award_data'] = award_data
+
+    dest_path = './gg' + str(YEAR) + 'results.json'
+    with open(dest_path, 'w') as fout:
+        json.dump(results, fout)
+    
     return
 
 if __name__ == '__main__':
