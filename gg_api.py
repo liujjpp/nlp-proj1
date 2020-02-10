@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from nltk.tokenize import RegexpTokenizer
 from preprocess import *
+from red_carpet import *
 
 OFFICIAL_AWARDS_1315 = ['cecil b. demille award', 'best motion picture - drama', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best motion picture - comedy or musical', 'best performance by an actress in a motion picture - comedy or musical', 'best performance by an actor in a motion picture - comedy or musical', 'best animated feature film', 'best foreign language film', 'best performance by an actress in a supporting role in a motion picture', 'best performance by an actor in a supporting role in a motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best television series - comedy or musical', 'best performance by an actress in a television series - comedy or musical', 'best performance by an actor in a television series - comedy or musical', 'best mini-series or motion picture made for television', 'best performance by an actress in a mini-series or motion picture made for television', 'best performance by an actor in a mini-series or motion picture made for television', 'best performance by an actress in a supporting role in a series, mini-series or motion picture made for television', 'best performance by an actor in a supporting role in a series, mini-series or motion picture made for television']
 OFFICIAL_AWARDS_1819 = ['best motion picture - drama', 'best motion picture - musical or comedy', 'best performance by an actress in a motion picture - drama', 'best performance by an actor in a motion picture - drama', 'best performance by an actress in a motion picture - musical or comedy', 'best performance by an actor in a motion picture - musical or comedy', 'best performance by an actress in a supporting role in any motion picture', 'best performance by an actor in a supporting role in any motion picture', 'best director - motion picture', 'best screenplay - motion picture', 'best motion picture - animated', 'best motion picture - foreign language', 'best original score - motion picture', 'best original song - motion picture', 'best television series - drama', 'best television series - musical or comedy', 'best television limited series or motion picture made for television', 'best performance by an actress in a limited series or a motion picture made for television', 'best performance by an actor in a limited series or a motion picture made for television', 'best performance by an actress in a television series - drama', 'best performance by an actor in a television series - drama', 'best performance by an actress in a television series - musical or comedy', 'best performance by an actor in a television series - musical or comedy', 'best performance by an actress in a supporting role in a series, limited series or motion picture made for television', 'best performance by an actor in a supporting role in a series, limited series or motion picture made for television', 'cecil b. demille award']
@@ -460,7 +461,7 @@ def get_worst_dressed(year):
     return top1[0][0]
 
 def get_most_humorous(year):
-    src_path = './gg' + str(year) + '.json'
+    src_path = './gg' + str(year) + '_all.json'
     tweets = tweets_to_words(src_path)
     keywords = ['funny', 'joke', 'haha', 'hilarious']
     stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Didn', 'didn']
@@ -628,26 +629,25 @@ def main():
     run when grading. Do NOT change the name of this function or
     what it returns.'''
     # Your code here
-    print("Pre-ceremony processing ...")
     pre_ceremony()
 
     results = {}
 
     print('Getting winners ...')
     winners = get_winner(YEAR)
-    print('Getting winners completed.')
+    print('Getting winners complete.')
 
     print('Getting nominees ...')
     nominees = get_nominees(YEAR)
-    print('Getting nominees completed.')
+    print('Getting nominees complete.')
 
     print('Getting presenters ...')
     presenters = get_presenters(YEAR)
-    print('Getting presenters completed.')
+    print('Getting presenters complete.')
 
     print('Getting hosts ...')
     hosts = get_hosts(YEAR)
-    print('Getting hosts completed.')
+    print('Getting hosts complete.')
 
     results['hosts'] = hosts
     official_awards = OFFICIAL_AWARDS_1819 if YEAR > 2016 else OFFICIAL_AWARDS_1315
@@ -663,6 +663,61 @@ def main():
     with open(dest_path, 'w') as fout:
         json.dump(results, fout)
     
+    src_path = './gg' + str(YEAR) + '_dress.json'
+    tweets = tweets_to_list(src_path)
+    rc_info = red_carpet_process(tweets)
+    rc_out = readable_red_carpet(rc_info)
+    most_humorous = get_most_humorous(YEAR)
+
+    dest_path = './gg' + str(YEAR) + 'results.txt'
+    with open(dest_path, 'w') as fout:
+        fout.write('Host: ')
+        is_first = True
+        for host in hosts:
+            if is_first:
+                fout.write(host)
+                is_first = False
+            else:
+                fout.write(', ' + host)
+        fout.write('\n')
+
+        for key in award_data:
+            fout.write('\nAward: ' + key)
+            fout.write('\nPresenters: ')
+            is_first = True
+            for presenter in award_data[key]['presenters']:
+                if is_first:
+                    fout.write(presenter)
+                    is_first = False
+                else:
+                    fout.write(', ' + presenter)
+
+            fout.write('\nNominees: ')
+            is_first = True
+            for nominee in award_data[key]['nominees']:
+                if is_first:
+                    fout.write('"' + nominee + '"')
+                    is_first = False
+                else:
+                    fout.write(', "' + nominee + '"')
+
+            fout.write('\nWinner: "' + award_data[key]['winner'] + '"')
+            fout.write('\n')
+        fout.write('\n')
+
+        fout.write(rc_out)
+
+        fout.write('\nTop 3 Most Humorous People: ')
+        is_first = True
+        for person in most_humorous:
+            if is_first:
+                fout.write(person)
+                is_first = False
+            else:
+                fout.write(', ' + person)
+
+    print('\nResults generated.', '\nJSON format: gg%dresults.json' % YEAR, '\nHuman-readable format: gg%dresults.txt' % YEAR)
+
     return
 
 if __name__ == '__main__':

@@ -113,6 +113,3 @@ def tweets_to_words(src_path):
 
 if __name__ == "__main__":
     pass
-    # award_filter()
-    # host_filter()
-    # dress_filter()
