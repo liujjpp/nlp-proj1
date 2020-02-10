@@ -3,6 +3,8 @@ Project 1: The Golden Globes
 
 Group Members: Jiapeng Liu, Matthew Walsh, Ka Wong
 
+GitHub repository: https://github.com/liujjpp/nlp-proj1
+
 ## Directions for setup:
 
 ### Use virtualenv for handling dependencies
@@ -40,3 +42,18 @@ $ python3 -m spacy download en_core_web_sm
 * [gg2013.json](https://canvas.northwestern.edu/courses/105385/files/8069826/download)
 * [gg2015.json](https://canvas.northwestern.edu/courses/105385/files/8069845/download)
 * [gg2020.json](https://canvas.northwestern.edu/courses/105385/files/8019442/download)
+
+### Run
+```bash
+$ python gg_api.py
+```
+
+Sometimes IMDb queries can cause errors. Just run it again if one of the following exceptions occurs:
+
+```bash
+imdb._exceptions.IMDbDataAccessError: {'errcode': 54, 'errmsg': 'Connection reset by peer', 'url': 'https://www.imdb.com/find?q=xxx&s=nm', 'proxy': '', 'exception type': 'IOError', 'original exception': ConnectionResetError(54, 'Connection reset by peer')}
+```
+
+```bash
+imdb._exceptions.IMDbDataAccessError: {'errcode': None, 'errmsg': 'None', 'url': 'https://www.imdb.com/find?q=xxx&s=nm', 'proxy': '', 'exception type': 'IOError', 'original exception': URLError(timeout('_ssl.c:1039: The handshake operation timed out'))}
+```
