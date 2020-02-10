@@ -36,6 +36,8 @@ def get_hosts(year):
     # Your code here
     src_path = './gg' + str(year) + '_host.json'
     tweets = tweets_to_words(src_path)
+    if len(tweets) > 5000:
+        tweets = tweets[:5000]
     hosts = []
     all_names = []
     stop_words = ['Golden', 'golden', 'Hollywood', 'hollywood']
@@ -263,7 +265,7 @@ def get_nominees(year):
                 words = tokenizer_for_person.tokenize(tweet['text'])
                 text = ' '.join(words)
                 names = get_human_names(text)
-                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'congrats', 'represent', 'didn', 'comedy', 'hbo', 'would', 'deadline']
+                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'congrats', 'represent', 'didn', 'comedy', 'hbo', 'would', 'deadline', 'rt']
                 for name in names:
                     name_lower = name.lower()
                     if not any(w in name_lower for w in stop_words) and len(name.split()) < 4:
@@ -272,7 +274,7 @@ def get_nominees(year):
                 words = tokenizer_for_movie.tokenize(tweet['text'])
                 text = ' '.join(words)
                 names = re.findall('((?:[0-9]+|[A-Z][a-z]+|[A-Z]+)[:,]?(?:\s(?:&\s)?(?:-\s)?(?:in\s)?(?:on\s)?(?:and\s)?(?:for\s)?(?:to\s)?(?:a\s)?(?:[0-9]+|[A-Z][a-z]+|[A-Z]+)[:,]?)*)', text)
-                stop_words = ['golden', 'globes', 'oscar', 'congrats', 'best', 'award', 'netflix', 'http', 'hbo']
+                stop_words = ['golden', 'globes', 'oscar', 'congrats', 'best', 'award', 'netflix', 'http', 'hbo', 'nigger', 'rt', 'tv']
                 for name in names:
                     if not len(name) > 1:
                         continue
@@ -329,7 +331,7 @@ def get_winner(year):
                 words = tokenizer_for_person.tokenize(tweet['text'])
                 text = ' '.join(words)
                 names = get_human_names(text)
-                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'congrats', 'represent', 'didn', 'comedy', 'hbo', 'would', 'deadline']
+                stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'congrats', 'represent', 'didn', 'comedy', 'hbo', 'would', 'deadline', 'rt', 'award', 'win']
                 for name in names:
                     name_lower = name.lower()
                     if not any(w in name_lower for w in stop_words) and len(name.split()) < 4:
@@ -338,7 +340,7 @@ def get_winner(year):
                 words = tokenizer_for_movie.tokenize(tweet['text'])
                 text = ' '.join(words)
                 names = re.findall('((?:[0-9]+|[A-Z][a-z]+|[A-Z]+)[:,]?(?:\s(?:&\s)?(?:-\s)?(?:in\s)?(?:for\s)?(?:a\s)?(?:[0-9]+|[A-Z][a-z]+|[A-Z]+)[:,]?)*)', text)
-                stop_words = ['golden', 'globes', 'oscar', 'congrats', 'best', 'award', 'netflix', 'http', 'hbo']
+                stop_words = ['golden', 'globes', 'oscar', 'congrats', 'best', 'award', 'netflix', 'http', 'hbo', 'nigger', 'rt', 'tv']
                 for name in names:
                     if not len(name) > 1:
                         continue
@@ -383,9 +385,9 @@ def get_presenters(year):
     official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
     tokenizer = RegexpTokenizer(r'-|[A-Za-z]+')
 
-    presenters_sets = dict().fromkeys(official_awards, None)
-    for key in presenters_sets:
-        presenters_sets[key] = set()
+    presenters_all = dict().fromkeys(official_awards, None)
+    for key in presenters_all:
+        presenters_all[key] = []
     
     src_path = './gg' + str(year) + '_classified.json'
     with open(src_path, 'r') as fin:
@@ -396,21 +398,20 @@ def get_presenters(year):
             if not ('present' in text or 'Present' in text):
                 continue
             names = get_human_names(text)
-            stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'represent', 'didn', 'comedy']
+            stop_words = ['golden', 'globes', 'oscar', 'hollywood', 'congrats', 'represent', 'didn', 'comedy', 'hbo', 'would', 'deadline', 'rt', 'award', 'win']
             for name in names:
                 name_lower = name.lower()
                 if not any(w in name_lower for w in stop_words) and len(name.split()) < 4:
-                    presenters_sets[tweet['category']].add(name_lower)
+                    presenters_all[tweet['category']].append(name_lower)
 
     presenters = dict().fromkeys(official_awards, None)
     for key in presenters:
+        presenter_counter = Counter(presenters_all[key])
+        top10 = presenter_counter.most_common(10)
         presenters[key] = []
-        for name1 in presenters_sets[key]:
-            for name2 in presenters_sets[key]:
-                if name1 in name2 and name1 != name2:
-                    break
-            else:
-                presenters[key].append(name1)
+        if len(top10) > 0:
+            for k, v in top10:
+                presenters[key].append(k)
     
     return presenters
 
@@ -463,6 +464,8 @@ def get_worst_dressed(year):
 def get_most_humorous(year):
     src_path = './gg' + str(year) + '_all.json'
     tweets = tweets_to_words(src_path)
+    if len(tweets) > 200000:
+        tweets = tweets[:200000]
     keywords = ['funny', 'joke', 'haha', 'hilarious']
     stop_words = ['Golden', 'golden', 'Globes', 'globes', 'Didn', 'didn']
     all_names = []
@@ -655,7 +658,11 @@ def main():
     for key in award_data:
         award_data[key] = {}
         award_data[key]['nominees'] = nominees[key]
-        award_data[key]['presenters'] = presenters[key]
+        temp = []
+        for presenter in presenters[key]:
+            if presenter != winners[key]:
+                temp.append(presenter)
+        award_data[key]['presenters'] = temp
         award_data[key]['winner'] = winners[key]
     results['award_data'] = award_data
 
@@ -665,6 +672,8 @@ def main():
     
     src_path = './gg' + str(YEAR) + '_dress.json'
     tweets = tweets_to_list(src_path)
+    if len(tweets) > 5000:
+        tweets = tweets[:5000]
     rc_info = red_carpet_process(tweets)
     rc_out = readable_red_carpet(rc_info)
     most_humorous = get_most_humorous(YEAR)
