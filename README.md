@@ -44,8 +44,22 @@ $ python3 -m spacy download en_core_web_sm
 * [gg2020.json](https://canvas.northwestern.edu/courses/105385/files/8019442/download)
 
 ### Run
+For grading:
+
+```bash
+$ python autograder.py <year>
+```
+
+To output human-readable format results, run:
+
 ```bash
 $ python gg_api.py
+```
+
+Then input year, for example:
+
+```bash
+Which year: 2013
 ```
 
 Sometimes IMDb queries can cause errors. Just run it again if one of the following exceptions occurs:
