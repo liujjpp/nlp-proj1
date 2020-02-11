@@ -34,6 +34,9 @@ def get_hosts(year):
     '''Hosts is a list of one or more strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
+    if not isinstance(year, int):
+        year = int(year)
+
     src_path = './gg' + str(year) + '_host.json'
     tweets = tweets_to_words(src_path)
     if len(tweets) > 5000:
@@ -63,6 +66,9 @@ def get_awards(year):
     '''Awards is a list of strings. Do NOT change the name
     of this function or what it returns.'''
     # Your code here
+    if not isinstance(year, int):
+        year = int(year)
+
     keywords = ['Win', 'win', 'won', 'nail', 'Goes To', 'Goes to', 'goes to', 'Named', 'named', 'takes home', 'taken home']
     best_words = ['Best', 'BEST']
     helper_words = ['a', 'an', 'any', 'by', 'for', 'in', 'or', '-']
@@ -241,6 +247,9 @@ def get_nominees(year):
     names as keys, and each entry a list of strings. Do NOT change
     the name of this function or what it returns.'''
     # Your code here
+    if not isinstance(year, int):
+        year = int(year)
+
     official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
     nominees_all = dict().fromkeys(official_awards, None)
     for key in nominees_all:
@@ -307,6 +316,9 @@ def get_winner(year):
     names as keys, and each entry containing a single string.
     Do NOT change the name of this function or what it returns.'''
     # Your code here
+    if not isinstance(year, int):
+        year = int(year)
+
     official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
     winners_all = dict().fromkeys(official_awards, None)
     for key in winners_all:
@@ -382,6 +394,9 @@ def get_presenters(year):
     names as keys, and each entry a list of strings. Do NOT change the
     name of this function or what it returns.'''
     # Your code here
+    if not isinstance(year, int):
+        year = int(year)
+
     official_awards = OFFICIAL_AWARDS_1819 if year > 2016 else OFFICIAL_AWARDS_1315
     tokenizer = RegexpTokenizer(r'-|[A-Za-z]+')
 
@@ -416,6 +431,9 @@ def get_presenters(year):
     return presenters
 
 def get_best_dressed(year):
+    if not isinstance(year, int):
+        year = int(year)
+
     src_path = './gg' + str(year) + '_dress.json'
     tweets = tweets_to_words(src_path)
     keywords = ['best', 'best-dressed', 'great', 'good', 'amazing', 'beautiful', 'gorgeous']
@@ -439,6 +457,9 @@ def get_best_dressed(year):
     return top1[0][0]
 
 def get_worst_dressed(year):
+    if not isinstance(year, int):
+        year = int(year)
+
     src_path = './gg' + str(year) + '_dress.json'
     tweets = tweets_to_words(src_path)
     keywords = ['worst', 'worst-dressed', 'bad', 'weird', 'terrible', 'gross']
@@ -462,6 +483,9 @@ def get_worst_dressed(year):
     return top1[0][0]
 
 def get_most_humorous(year):
+    if not isinstance(year, int):
+        year = int(year)
+
     src_path = './gg' + str(year) + '_all.json'
     tweets = tweets_to_words(src_path)
     if len(tweets) > 200000:
@@ -489,6 +513,9 @@ def get_most_humorous(year):
     return most_humorous
 
 def categories_init(year):
+    if not isinstance(year, int):
+        year = int(year)
+
     if year > 2016:
         official_awards = OFFICIAL_AWARDS_1819
     else:
@@ -592,21 +619,21 @@ def recognize_award(text):
     
     return closet_award
 
-def pre_ceremony():
+def pre_ceremony(year):
     '''This function loads/fetches/processes any data your program
     will use, and stores that data in your DB or in a json, csv, or
     plain text file. It is the first thing the TA will run when grading.
     Do NOT change the name of this function or what it returns.'''
     # Your code here
-    global YEAR
-    YEAR = int(input('Which year: '))
+    if not isinstance(year, int):
+        year = int(year)
 
-    categories_init(YEAR)
-    extract_text(YEAR)
-    award_filter(YEAR)
+    categories_init(year)
+    extract_text(year)
+    award_filter(year)
 
-    src_path = './gg' + str(YEAR) + '_award.json'
-    dest_path = './gg' + str(YEAR) + '_classified.json'
+    src_path = './gg' + str(year) + '_award.json'
+    dest_path = './gg' + str(year) + '_classified.json'
     with open(src_path, 'r') as fin:
         with open(dest_path, 'w') as fout:
             for tweet in fin.readlines():
@@ -619,8 +646,8 @@ def pre_ceremony():
                     json.dump(new_tweet, fout)
                     fout.write('\n')
 
-    host_filter(YEAR)
-    dress_filter(YEAR)
+    host_filter(year)
+    dress_filter(year)
 
     print("Pre-ceremony processing complete.")
     return
@@ -632,7 +659,9 @@ def main():
     run when grading. Do NOT change the name of this function or
     what it returns.'''
     # Your code here
-    pre_ceremony()
+    global YEAR
+    YEAR = int(input('Which year: '))
+    pre_ceremony(YEAR)
 
     results = {}
 
