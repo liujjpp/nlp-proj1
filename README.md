@@ -14,6 +14,7 @@ GitHub repository: https://github.com/liujjpp/nlp-proj1
 * Pip 3
 
 ### Installation
+#### Mac/Linux Instructions
 ```bash
 $ pip3 install virtualenv
 ```
@@ -32,6 +33,27 @@ $ pip install -r requirements.txt
 
 ```bash
 $ python3 -m spacy download en_core_web_sm
+```
+#### Windows Instructions
+(Assumes PYTHON path var is set to a python3 executable)
+```shell
+$ pip install virtualenv
+```
+
+```shell
+$ virtualenv venv
+```
+
+```shell
+$ venv\bin\activate
+```
+
+```shell
+$ pip install -r requirements.txt
+```
+
+```shell
+$ python -m spacy download en_core_web_sm
 ```
 
 ### Get Required Files (json) for autograder from https://github.com/milara/gg-project-master
