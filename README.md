@@ -50,6 +50,10 @@ For grading:
 $ python autograder.py <year>
 ```
 
+NOTE: Make sure you run gg_api.pre_ceremony(year) for each year before the grading process if you are using the original version of autograder.py
+
+
+
 To output human-readable format results, run:
 
 ```bash
